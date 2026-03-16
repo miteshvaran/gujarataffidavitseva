@@ -570,6 +570,116 @@ function sendMsg(){
   document.getElementById('succMsg').style.display='block';
   setTimeout(function(){document.getElementById('succMsg').style.display='none';},4000);
 }
+
+
+</script><!-- AUTH MODAL -->
+<div class="auth-bg" id="authBg" onclick="authBgClose(event)">
+  <div class="auth-box">
+    <button class="auth-close" onclick="closeAuth()">✕</button>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabLogin" onclick="switchTab('login')">🔑 લૉગિન</div>
+      <div class="auth-tab" id="tabReg" onclick="switchTab('register')">📝 રજીસ્ટર</div>
+    </div>
+    <!-- Login Form -->
+    <div id="loginForm">
+      <div class="auth-fgrp"><label>મોબાઈલ / Email</label><input type="text" id="lUser" placeholder="Phone or Email"/></div>
+      <div class="auth-fgrp"><label>પાસવર્ડ</label><input type="password" id="lPass" placeholder="Password"/></div>
+      <button class="auth-btn" onclick="doLogin()">🔑 લૉગિન કરો</button>
+    </div>
+    <!-- Register Form -->
+    <div id="regForm" style="display:none">
+      <div class="auth-fgrp"><label>પૂરું નામ</label><input type="text" id="rName" placeholder="Full Name"/></div>
+      <div class="auth-fgrp"><label>મોબાઈલ / Email</label><input type="text" id="rUser" placeholder="Phone or Email"/></div>
+      <div class="auth-fgrp"><label>પાસવર્ડ</label><input type="password" id="rPass" placeholder="Password (min 6)"/></div>
+      <div class="auth-fgrp"><label>પાસવર્ડ ફરી</label><input type="password" id="rPass2" placeholder="Confirm Password"/></div>
+      <button class="auth-btn" onclick="doRegister()">📝 રજીસ્ટર કરો</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js">
+// ============================================================
+// AUTH — Register / Login (localStorage based)
+// ============================================================
+function openAuth(){document.getElementById('authBg').classList.add('open');}
+function closeAuth(){document.getElementById('authBg').classList.remove('open');document.getElementById('authMsg').textContent='';}
+function authBgClose(e){if(e.target.id==='authBg')closeAuth();}
+
+function switchTab(tab){
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('regForm').style.display=tab==='register'?'block':'none';
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabReg').classList.toggle('active',tab==='register');
+  document.getElementById('authMsg').textContent='';
+}
+
+function doRegister(){
+  var name=document.getElementById('rName').value.trim();
+  var user=document.getElementById('rUser').value.trim();
+  var pass=document.getElementById('rPass').value;
+  var pass2=document.getElementById('rPass2').value;
+  var msg=document.getElementById('authMsg');
+  if(!name||!user||!pass){msg.className='auth-msg err';msg.textContent='કૃપા કરીને બધી વિગત ભરો';return;}
+  if(pass.length<6){msg.className='auth-msg err';msg.textContent='પાસવર્ડ ઓછામાં ઓછા 6 અક્ષર જોઈએ';return;}
+  if(pass!==pass2){msg.className='auth-msg err';msg.textContent='પાસવર્ડ મેળ નથી ખાતા';return;}
+  var users=JSON.parse(localStorage.getItem('ga_users')||'{}');
+  if(users[user]){msg.className='auth-msg err';msg.textContent='આ User ID પહેલેથી જ છે';return;}
+  users[user]={name:name,pass:pass};
+  localStorage.setItem('ga_users',JSON.stringify(users));
+  msg.className='auth-msg ok';msg.textContent='રજીસ્ટર સારું થયું! હવે લૉગિન કરો';
+  setTimeout(function(){switchTab('login');},1200);
+}
+
+function doLogin(){
+  var user=document.getElementById('lUser').value.trim();
+  var pass=document.getElementById('lPass').value;
+  var msg=document.getElementById('authMsg');
+  if(!user||!pass){msg.className='auth-msg err';msg.textContent='કૃપા કરીને User ID અને Password નાખો';return;}
+  var users=JSON.parse(localStorage.getItem('ga_users')||'{}');
+  if(!users[user]||users[user].pass!==pass){msg.className='auth-msg err';msg.textContent='User ID કે Password ખોટું છે';return;}
+  localStorage.setItem('ga_loggedin',JSON.stringify({user:user,name:users[user].name}));
+  closeAuth();
+  updateNavAuth();
+}
+
+function doLogout(){
+  localStorage.removeItem('ga_loggedin');
+  updateNavAuth();
+}
+
+function updateNavAuth(){
+  var area=document.getElementById('navAuthArea');
+  var logged=JSON.parse(localStorage.getItem('ga_loggedin')||'null');
+  if(logged){
+    area.innerHTML='<div class="user-dropdown"><span class="user-name-nav" onclick="toggleDropdown()">👤 '+logged.name+' ▾</span>'
+      +'<div class="user-dropdown-menu" id="userMenu">'
+      +'<a style="padding:10px 16px;display:block;font-size:.82rem;color:#374151;">👤 '+logged.name+'<br/><span style="font-size:.7rem;color:#9ca3af;">'+logged.user+'</span></a>'
+      +'<hr style="border:none;border-top:1px solid #f1f5f9;"/>'
+      +'<button class="logout-btn" onclick="doLogout()">🚪 લૉગઆઉટ કરો</button>'
+      +'</div></div>';
+  } else {
+    area.innerHTML='<button class="user-btn" onclick="openAuth()">👤 લૉગિન / રજીસ્ટર</button>';
+  }
+}
+
+function toggleDropdown(){
+  var m=document.getElementById('userMenu');
+  if(m)m.classList.toggle('open');
+}
+
+document.addEventListener('click',function(e){
+  var d=document.querySelector('.user-dropdown');
+  if(d&&!d.contains(e.target)){
+    var m=document.getElementById('userMenu');
+    if(m)m.classList.remove('open');
+  }
+});
+
+updateNavAuth();
+
 </script>
+</body>
+</html>
 </body>
 </html>
